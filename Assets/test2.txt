@@ -1,0 +1,16 @@
+level:0 name:root rest:ABC
+level:1 name:A rest:BC
+level:1 name:B rest:AC
+level:1 name:C rest:AB
+level:2 name:B rest:C
+level:2 name:C rest:B
+level:3 name:C rest:
+level:3 name:B rest:
+level:2 name:A rest:C
+level:2 name:C rest:A
+level:3 name:C rest:
+level:3 name:A rest:
+level:2 name:A rest:B
+level:2 name:B rest:A
+level:3 name:B rest:
+level:3 name:A rest:
