@@ -15,12 +15,17 @@ public class SC1 : MonoBehaviour
         string folder = Application.dataPath;    //これだけでunityの実行ファイルがあるフォルダがわかる
         TreeWord tree = Respown();
 
-        ChrSet ch = new ChrSet(8, 8,'.');
+        ChrSet ch = new ChrSet(8, 8, '.');
         ch.PutChr('a', 2, 2);
         ch.PutChr('c', 3, 2);
         ch.PutChr('b', 4, 3);
+        ch.PutCorner(3, 3);
 
         ch.RectCopy(2, 2, 3, 2, 2, 5);
+        ch.PutRuledLine(2, 5, 4, true);
+        ch.PutRuledLine(2, 4, 7, false);
+        ch.PutForkedDown(0, 0);
+        ch.PutForkedRight(0, 1);
 
         ClassSaveText(folder, @"\test3.txt", ch.ToStringArray());
 
@@ -29,11 +34,55 @@ public class SC1 : MonoBehaviour
         //ClassSaveText(folder, @"\test3.txt", txtTree);
     }
 
+    public class TreeWord
+    {
+        public List<KeyWord> list;
+        public int maxLevel;
+        public int maxRow;
 
+        //ctor
+        public TreeWord()
+        {
+            list = new List<KeyWord>();
+            maxLevel = 0;
+            maxRow = 0;
+        }
+    }
+
+    class TextTreeWord : TreeWord {
+        public int traceCount;      //出力用カウンタ
+        public IntRect rect;        //出力用
+        ChrSet chrset;
+
+        public TextTreeWord()
+        {
+            chrset = new ChrSet(this.maxLevel* 2, this.maxRow);
+        }
+
+    }
+
+
+    private string[] TextTree(TreeWord tree)
+    {
+        //TextTreeLoop(treeList[0], chrset);
+
+        return null;
+    }
+
+    //利用するtreeListを壊しながらテキストを作成する
+    private void TextTreeLoop(KeyWord currentKeyword, ChrSet chr)
+    {
+        while (currentKeyword.child.Count != 0)
+        {
+            currentKeyword = currentKeyword.child[0];
+        }
+
+        print("!");
+    }
 
     class ChrSet
     {
-        int column, row=0;
+        int column, row = 0;
         char initChr;
         char verticalLine;
         char horizontalLine;
@@ -42,10 +91,19 @@ public class SC1 : MonoBehaviour
         char cornerNode;
         char[] chr;
 
+        public int Column {
+            get { return column; }
+            }
+
+        public int Row
+        {
+            get { return row; }
+        }
+
         //ctor
-        public ChrSet(int column,int row,
-            char initChr=' ',
-            char verticalLine='│',
+        public ChrSet(int column, int row,
+            char initChr = ' ',
+            char verticalLine = '│',
             char horizontalLine = '─',
             char forkedDownNode = '┬',
             char forkedRightNode = '├',
@@ -65,70 +123,108 @@ public class SC1 : MonoBehaviour
             Initialize();
         }
 
-        public void Initialize() {
+        public void Initialize()
+        {
             for (int i = 0; i < chr.Length; i++)
             {
                 chr[i] = this.initChr;
             }
         }
 
-        public void PutChr(char c,int x, int y) {
+        public bool PutChr(char c, int x, int y)
+        {
+            if (x > column || y > row) return false;
             chr[x + (y * row)] = c;
+            return true;
         }
 
-        public char GetChr(int x, int y) {
+        public char GetChr(int x, int y)
+        {
             return chr[x + (y * row)];
         }
 
         //横線、縦線を引く
-        public void RuledLine(int x, int y,int length,bool vertical=true) {
-
-
-        }
-
-        public void PutCorner(int x, int y)
+        public bool PutRuledLine(int x, int y, int length, bool vertical = true)
         {
-            chr[x + (y * row)] = cornerNode;
+            if (vertical)
+            {
+                if ((y + length) > row) return false;
+                for (int i = 0; i < length; i++)
+                {
+                    PutChr(verticalLine, x, y + i);
+                }
+            }
+            else
+            {
+                if ((x + length) > column) return false;
+                for (int i = 0; i < length; i++)
+                {
+                    PutChr(horizontalLine, x + i, y);
+                }
+            }
+            return true;
         }
 
+        public bool PutCorner(int x, int y)
+        {
+            if (x > column || y > row) return false;
+            chr[x + (y * row)] = cornerNode;
+            return true;
+        }
+
+        public bool PutForkedDown(int x, int y)
+        {
+            if (x > column || y > row) return false;
+            chr[x + (y * row)] = forkedDownNode;
+            return true;
+        }
+
+        public bool PutForkedRight(int x, int y)
+        {
+            if (x > column || y > row) return false;
+            chr[x + (y * row)] = forkedRightNode;
+            return true;
+        }
 
         //矩形コピー　正常終了でtrueを返す
         public bool RectCopy(
             int x, int y, int width, int height,
             int clnX, int clnY,
-            bool init=false)
+            bool init = false)
         {
             //枠内チェック
-            if ((x + width) > column || (y+height)>row) return false;
-            if ((clnX + width) > column || (clnY+height) > row) return false;
+            if ((x + width) > column || (y + height) > row) return false;
+            if ((clnX + width) > column || (clnY + height) > row) return false;
 
-            char[] temp = new char[width*height];
+            char[] temp = new char[width * height];
 
             //コピー元を取る
-            for (int k=0,i = 0; i < height; i++)
+            for (int k = 0, i = 0; i < height; i++)
             {
-                for (int j = x; j < x+width; j++)
+                for (int j = x; j < x + width; j++)
                 {
-                    temp[k++] = GetChr(j,y+i);
-                    if (init) {
-                        PutChr(initChr, j, y + i ); //コピー元を初期化する
+                    temp[k++] = GetChr(j, y + i);
+                    if (init)
+                    {
+                        PutChr(initChr, j, y + i); //コピー元を初期化する
                     }
                 }
             }
 
             //コピー先を書き換え
-            for (int k=0,i = 0; i < height; i++)
+            for (int k = 0, i = 0; i < height; i++)
             {
                 for (int j = 0; j < width; j++)
                 {
-                    PutChr(temp[k++],clnX+j,clnY+i);
+                    PutChr(temp[k++], clnX + j, clnY + i);
                 }
             }
             return true;
         }
 
         //string配列に変換出力
-        public string[] ToStringArray() {
+        public string[] ToStringArray()
+        {
 
             string[] str = new string[row];
             char[] temp = new char[column];
@@ -137,7 +233,7 @@ public class SC1 : MonoBehaviour
             {
                 for (int j = 0; j < column; j++)
                 {
-                    temp[j] = chr[(i*column)+j];
+                    temp[j] = chr[(i * column) + j];
                 }
                 str[i] = new string(temp);
             }
@@ -147,33 +243,6 @@ public class SC1 : MonoBehaviour
 
     }
 
-private string[] TextTree(TreeWord tree)
-    {
-        List<KeyWord> treeList = new List<KeyWord>(tree.list);      //リストの複製
-
-        ChrSet chrset=new ChrSet(tree.maxLevel * 2, tree.maxRow);
-
-        //TextTreeLoop(treeList[0], chrset);
-
-
-        return null;
-
-
-    }
-
-    //利用するtreeListを壊しながらテキストを作成する
-    private void TextTreeLoop(KeyWord currentKeyword, char[] chr)
-    {
-        int column, row = 0;
-        int maxColumn, maxRow;
-
-        while (currentKeyword.child.Count != 0)
-        {
-            currentKeyword = currentKeyword.child[0];
-        }
-
-        print("!");
-    }
 
 
 
@@ -220,7 +289,7 @@ private string[] TextTree(TreeWord tree)
                 name = keyword.rest.Substring(i, 1),
                 rest = keyword.rest.Remove(i, 1),
                 root = keyword,
-                child = null
+                child = null,
             };
 
             list.Add(key);
@@ -237,20 +306,12 @@ private string[] TextTree(TreeWord tree)
     }
 
 
-    public class TreeWord
+    public class IntRect
     {
-        public List<KeyWord> list;
-        public int maxLevel;
-        public int maxRow;
-
-        //ctor
-        public TreeWord()
-        {
-            list = new List<KeyWord>();
-            maxLevel = 0;
-            maxRow = 0;
-        }
-
+        public int x = 0;
+        public int y = 0;
+        public int widht = 0;
+        public int height = 0;
     }
 
     public class KeyWord
