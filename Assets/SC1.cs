@@ -15,72 +15,87 @@ public class SC1 : MonoBehaviour
         string folder = Application.dataPath;    //これだけでunityの実行ファイルがあるフォルダがわかる
         TreeWord tree = Respown();
 
-        ChrSet ch = new ChrSet(8, 8, '.');
-        ch.PutChr('a', 2, 2);
-        ch.PutChr('c', 3, 2);
-        ch.PutChr('b', 4, 3);
-        ch.PutCorner(3, 3);
+        TextTree textTree = new TextTree(tree);
+        ClassSaveText(folder, @"\test4.txt", textTree.chrset.ToStringArray());
 
-        ch.RectCopy(2, 2, 3, 2, 2, 5);
-        ch.PutRuledLine(2, 5, 4, true);
-        ch.PutRuledLine(2, 4, 7, false);
-        ch.PutForkedDown(0, 0);
-        ch.PutForkedRight(0, 1);
 
-        ClassSaveText(folder, @"\test3.txt", ch.ToStringArray());
+        //ChrSet ch = new ChrSet(8, 8, '.');
+        //ch.PutChr('a', 2, 2);
+        //ch.PutChr('c', 3, 2);
+        //ch.PutChr('b', 4, 3);
+        //ch.PutCorner(3, 3);
+
+        //ch.RectCopy(2, 2, 3, 2, 2, 5);
+        //ch.PutRuledLine(2, 5, 4, true);
+        //ch.PutRuledLine(2, 4, 7, false);
+        //ch.PutForkedDown(0, 0);
+        //ch.PutForkedRight(0, 1);
+
+        //ClassSaveText(folder, @"\test3.txt", ch.ToStringArray());
 
         //string[] txtTree = TextTree(tree);
         //ClassSaveText(folder, @"\test2.txt", tree.list);
         //ClassSaveText(folder, @"\test3.txt", txtTree);
     }
 
-    public class TreeWord
+    class TextTree
     {
-        public List<KeyWord> list;
-        public int maxLevel;
-        public int maxRow;
 
-        //ctor
-        public TreeWord()
+        enum PATH
         {
-            list = new List<KeyWord>();
-            maxLevel = 0;
-            maxRow = 0;
+            forward,
+            reverse
+        }
+
+        public List<KeyWord> treeList;
+        public ChrSet chrset;
+
+        int level = 0;
+
+        public TextTree(TreeWord tree)
+        {
+            treeList = new List<KeyWord>(tree.list);      //リストの複製
+            chrset = new ChrSet(tree.maxLevel * 2, tree.maxRow);
+
+            TextTreeLoop(0, 0, chrset, treeList[0], PATH.forward);
+        }
+
+        private void TextTreeLoop(int x, int y, ChrSet chrset, KeyWord keyWord, PATH path)
+        {
+            //ChrSet edit = keyWord.chrParts;
+
+            //大元となるブランチパーツの作成
+            if (keyWord.child.Count != 1)   //終端を判定
+            {
+                if (keyWord.traceCount == 0)    //はじめての分岐か？
+                {
+                    chrset.PutForkedDown(keyWord.level * 2, y);
+                }
+                else
+                {
+                    chrset.PutForkedRight(keyWord.level * 2, y);
+                }
+                chrset.PutChr(keyWord.child[0].name[0], keyWord.level * 2 + 1, y);
+
+                keyWord.traceCount++;
+                x += 2;
+
+                TextTreeLoop(x, y, chrset, keyWord.child[0], PATH.forward); //前進
+
+            }
+            else {
+                //後退する
+                path = PATH.reverse;
+
+                //TODO memo:用意したパラメータの中に不要なのがいっぱいありそう
+            }
         }
     }
 
-    class TextTreeWord : TreeWord {
-        public int traceCount;      //出力用カウンタ
-        public IntRect rect;        //出力用
-        ChrSet chrset;
-
-        public TextTreeWord()
-        {
-            chrset = new ChrSet(this.maxLevel* 2, this.maxRow);
-        }
-
-    }
 
 
-    private string[] TextTree(TreeWord tree)
-    {
-        //TextTreeLoop(treeList[0], chrset);
 
-        return null;
-    }
-
-    //利用するtreeListを壊しながらテキストを作成する
-    private void TextTreeLoop(KeyWord currentKeyword, ChrSet chr)
-    {
-        while (currentKeyword.child.Count != 0)
-        {
-            currentKeyword = currentKeyword.child[0];
-        }
-
-        print("!");
-    }
-
-    class ChrSet
+    public class ChrSet
     {
         int column, row = 0;
         char initChr;
@@ -90,15 +105,6 @@ public class SC1 : MonoBehaviour
         char forkedRightNode;
         char cornerNode;
         char[] chr;
-
-        public int Column {
-            get { return column; }
-            }
-
-        public int Row
-        {
-            get { return row; }
-        }
 
         //ctor
         public ChrSet(int column, int row,
@@ -290,6 +296,8 @@ public class SC1 : MonoBehaviour
                 rest = keyword.rest.Remove(i, 1),
                 root = keyword,
                 child = null,
+                traceCount = 0,
+                traceRect = { posX = 0, posY = 0, width = 0, height = 0 },
             };
 
             list.Add(key);
@@ -306,12 +314,20 @@ public class SC1 : MonoBehaviour
     }
 
 
-    public class IntRect
+    public class TreeWord
     {
-        public int x = 0;
-        public int y = 0;
-        public int widht = 0;
-        public int height = 0;
+        public List<KeyWord> list;
+        public int maxLevel;
+        public int maxRow;
+
+        //ctor
+        public TreeWord()
+        {
+            list = new List<KeyWord>();
+            maxLevel = 0;
+            maxRow = 0;
+        }
+
     }
 
     public class KeyWord
@@ -321,6 +337,10 @@ public class SC1 : MonoBehaviour
         public string rest;         //残りのワード（記憶）
         public KeyWord root;        //親の枝
         public List<KeyWord> child; //子の枝
+        public int traceCount;
+        public IntRect traceRect;
+        public bool passed;
+        public ChrSet chrParts;
 
         public override string ToString()
         {
@@ -328,6 +348,15 @@ public class SC1 : MonoBehaviour
             //return string.Format("level:{0} name:{1} rest:{2} root:{3} child:{4}",level,name,rest,root,child);
         }
     }
+
+    public struct IntRect
+    {
+        public int posX;
+        public int posY;
+        public int width;
+        public int height;
+    }
+
 
     //資料：StreamWriter クラス (System.IO)
     //http://msdn.microsoft.com/ja-jp/library/system.io.streamwriter(v=vs.110).aspx
