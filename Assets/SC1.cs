@@ -17,82 +17,69 @@ public class SC1 : MonoBehaviour
 
         TextTree textTree = new TextTree(tree);
         ClassSaveText(folder, @"\test4.txt", textTree.chrset.ToStringArray());
-
-
-        //ChrSet ch = new ChrSet(8, 8, '.');
-        //ch.PutChr('a', 2, 2);
-        //ch.PutChr('c', 3, 2);
-        //ch.PutChr('b', 4, 3);
-        //ch.PutCorner(3, 3);
-
-        //ch.RectCopy(2, 2, 3, 2, 2, 5);
-        //ch.PutRuledLine(2, 5, 4, true);
-        //ch.PutRuledLine(2, 4, 7, false);
-        //ch.PutForkedDown(0, 0);
-        //ch.PutForkedRight(0, 1);
-
-        //ClassSaveText(folder, @"\test3.txt", ch.ToStringArray());
-
-        //string[] txtTree = TextTree(tree);
-        //ClassSaveText(folder, @"\test2.txt", tree.list);
-        //ClassSaveText(folder, @"\test3.txt", txtTree);
     }
 
-    class TextTree
+
+    public class TextTree
     {
-
-        enum PATH
-        {
-            forward,
-            reverse
-        }
-
-        public List<KeyWord> treeList;
+        TreeWord tree;
         public ChrSet chrset;
 
-        int level = 0;
-
+        //ctor
         public TextTree(TreeWord tree)
         {
-            treeList = new List<KeyWord>(tree.list);      //リストの複製
+            this.tree = tree;
             chrset = new ChrSet(tree.maxLevel * 2, tree.maxRow);
 
-            TextTreeLoop(0, 0, chrset, treeList[0], PATH.forward);
+            Controller con = new Controller(tree.list[0]);
+
         }
 
-        private void TextTreeLoop(int x, int y, ChrSet chrset, KeyWord keyWord, PATH path)
-        {
-            //ChrSet edit = keyWord.chrParts;
+        public class Controller {
+            Key next;
+            Stack <Key> prev;
 
-            //大元となるブランチパーツの作成
-            if (keyWord.child.Count != 1)   //終端を判定
+            //ctor
+            public Controller(KeyWord rootKey)
             {
-                if (keyWord.traceCount == 0)    //はじめての分岐か？
-                {
-                    chrset.PutForkedDown(keyWord.level * 2, y);
-                }
-                else
-                {
-                    chrset.PutForkedRight(keyWord.level * 2, y);
-                }
-                chrset.PutChr(keyWord.child[0].name[0], keyWord.level * 2 + 1, y);
+                prev = new Stack<Key>();
+                SetKey(rootKey);
 
-                keyWord.traceCount++;
-                x += 2;
+                //TODO 再帰初期化が終了して再帰処理を書くところ。設計を形にしていくフェイズ
 
-                TextTreeLoop(x, y, chrset, keyWord.child[0], PATH.forward); //前進
 
             }
-            else {
-                //後退する
-                path = PATH.reverse;
 
-                //TODO memo:用意したパラメータの中に不要なのがいっぱいありそう
+            private void SetKey(KeyWord key)
+            {
+                next = new Key(ChrSet.Character.forkedDownNode, key.child[0]);
+
+                for (int i = key.child.Count; i > 0; i--)
+                {
+                    if (i == key.child.Count)
+                    {
+                        prev.Push(new Key(ChrSet.Character.cornerNode, key.child[i]));
+                    }
+                    else
+                    {
+                        prev.Push(new Key(ChrSet.Character.forkedRightNode, key.child[i]));
+                    }
+                }
+            }
+        }
+
+        public class Key
+        {
+            ChrSet.Character first;
+            KeyWord keyWord;
+
+            public Key(ChrSet.Character first,KeyWord keyWord)
+            {
+                this.first = first;
+                this.keyWord = keyWord;
             }
         }
     }
-
-
 
 
     public class ChrSet
@@ -105,6 +92,29 @@ public class SC1 : MonoBehaviour
         char forkedRightNode;
         char cornerNode;
         char[] chr;
+
+        public enum Character
+        {
+            forkedDownNode,
+            forkedRightNode,
+            cornerNode,
+            verticalLine,
+            horizontalLine,
+        }
+
+        public char SetChr(Character sw)
+        {
+            char c=' ';
+            switch (sw)
+            {
+                case Character.forkedDownNode: c= forkedDownNode; break;
+                case Character.forkedRightNode: c = forkedRightNode; break;
+                case Character.cornerNode: c = cornerNode; break;
+                case Character.horizontalLine: c = horizontalLine; break;
+                case Character.verticalLine: c = verticalLine; break;
+            }
+            return c;
+        }
 
         //ctor
         public ChrSet(int column, int row,
