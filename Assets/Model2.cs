@@ -1,45 +1,66 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Model2 : MonoBehaviour
 {
 
     void Start()
     {
-        //置換関数化
-        Rotate f = new Rotate("ABCABC");                                //f:X→Y
-        Rotate iota = new Rotate(new int[] { 0, 1, 2, 3, 4, 5 });       //ι：恒等置換
-        Rotate sigma = new Rotate(new int[] { 5, 0, 1, 2, 3, 4 });      //σ：回転
-        Rotate sigma2 = new Rotate(new int[] { 4, 5, 0, 1, 2, 3 });     //σ^2：回転
-        Rotate sigma3 = new Rotate(new int[] { 3, 4, 5, 0, 1, 2 });
-        Rotate sigma4 = new Rotate(new int[] { 2, 3, 4, 5, 0, 1 });
-        Rotate sigma5 = new Rotate(new int[] { 1, 2, 3, 4, 5, 0 });
-        Rotate tau = new Rotate(new int[] { 5, 4, 3, 2, 1, 0 });        //τ：左右反転
-
-        print(sigma * tau);
-        print(tau * sigma5);
-        //以下のように計算機として使う
-        //print(sigma * sigma * sigma);
-        //print(sigma * sigma * sigma * tau);
-        //print(tau * sigma * sigma);
-        //print(sigma * sigma * sigma * sigma * tau);
-        //print(f * tau * sigma2 == f * sigma4 * tau);
+        RotateGropup rg = new RotateGropup();
+        print(rg.Where(new Rotate("ABABAB")));
     }
+
+    class RotateGropup
+    {
+        public List<Rotate> rx = new List<Rotate>();
+
+        public RotateGropup()
+        {
+            rx.Add(new Rotate("ι", new int[] { 0, 1, 2, 3, 4, 5 }));
+            rx.Add(new Rotate("σ", new int[] { 5, 0, 1, 2, 3, 4 }));
+            rx.Add(new Rotate("σ2", new int[] { 4, 5, 0, 1, 2, 3 }));
+            rx.Add(new Rotate("σ3", new int[] { 3, 4, 5, 0, 1, 2 }));
+            rx.Add(new Rotate("σ4", new int[] { 2, 3, 4, 5, 0, 1 }));
+            rx.Add(new Rotate("σ5", new int[] { 1, 2, 3, 4, 5, 0 }));
+            rx.Add(new Rotate("τ", new int[] { 5, 4, 3, 2, 1, 0 }));
+            rx.Add(new Rotate("τσ", new int[] { 0, 5, 4, 3, 2, 1 }));
+            rx.Add(new Rotate("τσ2", new int[] { 1, 0, 5, 4, 3, 2 }));
+            rx.Add(new Rotate("τσ3", new int[] { 2, 1, 0, 5, 4, 3 }));
+            rx.Add(new Rotate("τσ4", new int[] { 3, 2, 1, 0, 5, 4 }));
+            rx.Add(new Rotate("τσ5", new int[] { 4, 3, 2, 1, 0, 5 }));
+        }
+
+        public string Where(Rotate f)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+            for (int i = 0; i < rx.Count; i++)
+            {
+                if (f*rx[0] == f * rx[i]) sb.Append(rx[i].name+" ");
+            }
+            return sb.ToString();
+        }
+    }
+
 
     //回転をモデル化した置換群R
     class Rotate
     {
+        public string name;
         public string X;
         public int[] shift;
 
-        public Rotate(int[] shift)
+        public Rotate(string name, int[] shift)
         {
+            this.name = name;
             this.X = "012345";
             this.shift = shift;
         }
 
         public Rotate(string X)
         {
+            this.name = "func";
             this.X = X;
             this.shift = new int[] { 0, 1, 2, 3, 4, 5 };
         }
@@ -60,7 +81,7 @@ public class Model2 : MonoBehaviour
 
             //あたらしいRotate型を作って返す
             //演算後はιで文字列の配置が変わった物を渡している。これが連続する二項演算の左辺になる
-            Rotate iota = new Rotate(new int[] { 0, 1, 2, 3, 4, 5 });
+            Rotate iota = new Rotate("iota",new int[] { 0, 1, 2, 3, 4, 5 });
             iota.X = new string(temp2);
             return iota;
         }
